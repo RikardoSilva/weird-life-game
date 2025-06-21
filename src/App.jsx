@@ -1,7 +1,9 @@
 import React, { use, useState } from 'react'
+import GameOverScreen from './components/GameOverScreen'
 import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
+import { motion } from 'framer-motion'
 
 const getRandomStat = () => Math.floor(Math.random() * 51) + 50 //Random between 50-100
 const countries = ['USA', 'Portugal', 'Brazil', 'Japan', 'Germany', 'Australia']; //Countries to chose
@@ -84,6 +86,7 @@ function App() {
     setEvent(null);
     setEventResolved(true); //So Age Up button shows immediatly
     setGameOver(false);
+    setGameStarted(true);
   };
 
   //Start new life
@@ -96,6 +99,7 @@ function App() {
     setEvent(null);
     setEventResolved(true); //So Age Up button shows immediatly
     setGameOver(false);
+    setGameStarted(false);
   };
 
   const getCauseOfDeath = () => {
@@ -170,110 +174,166 @@ function App() {
 
   return (
     <>
-      <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
-        {!gameStarted ? (
-          <div>
-            <h1>Bitlofe Clone</h1>
-            <input
-              type="text"
-              placeholder='Enter your name'
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-            /> <br /> <br />
-            <select
-              value={country}
-              onChange={e => setCountry(e.target.value)}>
-              {countries.map((c, i) => (
-                <option key={i} value={c}>{c}</option>
-              ))}
-            </select> <br /> <br />
-            <button
-              onClick={handleStart}
-              disabled={!username.trim()}
+      <div
+        style={{
+          display: 'flex',
+          flexDirection: 'column',
+          height: '100vh',
+          fontFamily: 'Arial',
+          overflow: 'hidden' // no global scroll ever
+        }}
+      >
+        <div className="main-wrapper fade-in">
+          {!gameStarted ? (
+            // === MAIN MENU ===
+            <div
+              style={{
+                minHeight: '100vh',
+                overflow: 'hidden',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexDirection: 'column',
+                padding: '1rem'
+              }}
             >
-              Start Life
-            </button>
-          </div>
-        ) : gameOver ? (
-          // Game Over screen
-          <div>
-            {/* Tombstone icon */}
-            <div className="tombstone-card">
-              <div className="tombstone-icon">🪦</div>
-              <div className="tombstone-rip">R.I.P.</div>
-              <div className="tombstone-name">{username}</div>
-              <div className="tombstone-age">Died at age {age}</div>
-            </div>
-            <p><strong>Cause of Death:</strong> {getCauseOfDeath()}</p>
-            {/* Show Game Over screen */}
-            <h2>💀 Game Over</h2>
-            <p>{username} has passed away at age {age} in {country}.</p>
-            <p>Final Stats:</p>
-            <StatBar label="Health" emoji="❤️" value={stats.health} color="#e74c3c" />
-            <StatBar label="Smarts" emoji="🧠" value={stats.smarts} color="#9b59b6" />
-            <StatBar label="Happiness" emoji="😊" value={stats.happiness} color="#f1c40f" />
-            <div style={{ marginTop: '2rem' }}>
-              <h3>🪦 Life Summary</h3>
-              <ul>
-                {lifeLog.map((log, index) => (
-                  <li key={index}>{log}</li>
+              <h1>Bitlofe Clone</h1>
+              <input
+                type="text"
+                placeholder="Enter your name"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+              />{' '}
+              <br /> <br />
+              <select value={country} onChange={e => setCountry(e.target.value)}>
+                {countries.map((c, i) => (
+                  <option key={i} value={c}>
+                    {c}
+                  </option>
                 ))}
-              </ul>
+              </select>{' '}
+              <br /> <br />
+              <button onClick={handleStart} disabled={!username.trim()}>
+                Start Life
+              </button>
             </div>
-            <button
-              style={{ marginTop: '2rem', display: 'flex', gap: '1rem', justifyContent: 'center' }}
-              onClick={() => window.location.reload()}
-            >
-              <button onClick={handleReplaySameCharacter}>🔁 Replay as {username}</button>
-              <button onClick={handleRestartGame}>🏠 Create New Character</button>
-            </button>
-          </div>
-        ) : (
-          //Main game screen
-          <div>
-            <h2>{username} – Age {age}</h2>
-            <p>🌍 Country: {country}</p>
-            <StatBar label="Health" emoji="❤️" value={stats.health} color="#e74c3c" />
-            <StatBar label="Smarts" emoji="🧠" value={stats.smarts} color="#9b59b6" />
-            <StatBar label="Happiness" emoji="😊" value={stats.happiness} color="#f1c40f" />
+          ) : gameOver ? (
+            // === GAME OVER SCREEN ===
+            <GameOverScreen className="game-over-screen fade-in"
+              name={username}
+              age={age}
+              onReplay={handleReplaySameCharacter}
+              onMainMenu={handleRestartGame}
+            />
+          ) : (
+            // === GAME SCREEN ===
+            <>
+              {/* Top Bar */}
+              <div
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  borderBottom: '1px solid #555',
+                  padding: '0.5rem 1rem',
+                  flexShrink: 0
+                }}
+              >
+                <h2 style={{ margin: 0 }}>{username}</h2>
+                <h2 style={{ margin: 0 }}>Age {age}</h2>
+              </div>
 
-            {/* Show random event */}
-            {event && !eventResolved && (
-              <div>
-                <h3>🗞️ Life Event:</h3>
-                <p>{event.description}</p>
-                <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem', flexWrap: 'wrap', justifyContent: 'center' }}>
-                  {event.options.map((opt, index) => (
-                    <button
-                      key={index}
-                      onClick={() => handleOption(index)}
-                    >
-                      {opt}
-                    </button>
-                  ))}
+              {/* Middle content */}
+              <div
+                style={{
+                  flex: 1,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  minHeight: 0, // allows internal scroll
+                  padding: '1rem',
+                  overflowY: 'auto'
+                }}
+                className="fade-in"
+              >
+                <p>🌍 Country: {country}</p>
+
+                {/* Life Log */}
+                <div style={{ marginTop: '2rem', flexGrow: 1 }}>
+                  <h3>📜 Life Log</h3>
+                  <div style={{ overflowY: 'auto', maxHeight: '300px' }}>
+                    <ul>
+                      {lifeLog.map((log, optionIndex) => (
+                        <li key={optionIndex}>{log}</li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               </div>
-            )}
 
-            {/* ✅ Age Up Button appears only when event is resolved */}
-            {(!event || eventResolved) && (
-              <button onClick={handleAgeUp} style={{ marginTop: '1rem' }}>
-                Age Up
-              </button>
-            )}
+              {/* Age Up button */}
+              {(!event || eventResolved) && (
+                <div className='age-up-button' style={{ textAlign: 'center', marginTop: '2rem' }}>
+                  <button onClick={handleAgeUp}>Age Up</button>
+                </div>
+              )}
 
-            {/* 📜 Life Log */}
-            <div style={{ marginTop: '2rem' }}>
-              <h3>📜 Life Log</h3>
-              <ul>
-                {lifeLog.map((log, optionIndex) => (
-                  <li key={optionIndex}>{log}</li>
-                ))}
-              </ul>
-            </div>
-          </div>
-        )}
-      </div>
+              {/* Life Event */}
+              {event && !eventResolved && (
+                <div style={{ marginTop: '1rem' }}>
+                  <h3>🗞️ Life Event:</h3>
+                  <p>{event.description}</p>
+                  <div className='choice-buttons'
+                    style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                      marginTop: '1rem'
+                    }}
+                  >
+                    {event.options.map((opt, index) => (
+                      <button key={index} onClick={() => handleOption(index)}>
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Bottom stats bar */}
+              <div
+                style={{
+                  borderTop: '1px solid #555',
+                  padding: '0.5rem 1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.5rem',
+                  flexShrink: 0
+                }}
+              >
+                <StatBar
+                  label="Health"
+                  emoji="❤️"
+                  value={stats.health}
+                  color="#e74c3c"
+                />
+                <StatBar
+                  label="Smarts"
+                  emoji="🧠"
+                  value={stats.smarts}
+                  color="#9b59b6"
+                />
+                <StatBar
+                  label="Happiness"
+                  emoji="😊"
+                  value={stats.happiness}
+                  color="#f1c40f"
+                />
+              </div>
+            </>
+          )}
+        </div>
+      </div >
     </>
   )
 }
