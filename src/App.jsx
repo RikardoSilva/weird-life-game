@@ -32,6 +32,7 @@ function App() {
   //User info
   const [username, setUsername] = useState('');
   const [country, setCountry] = useState(countries[0] || '');
+  const [money, setMoney] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
   const [age, setAge] = useState(0);
   const [stats, setStats] = useState({
@@ -40,6 +41,9 @@ function App() {
     smarts: getRandomStat(),
     looks: getRandomStat()
   });
+
+  const [job, setJob] = useState(null);
+
   const [lifeLog, setLifeLog] = useState([]);
 
   const [gameOver, setGameOver] = useState(false);
@@ -53,8 +57,8 @@ function App() {
       description: "You found a mysterious cookie on the ground.",
       options: ["Eat it", "Throw it away"],
       effects: [
-        { health: -10, smarts: -5, happiness: +10 }, // Eat it
-        { health: 0, smarts: +5, happiness: -2 }     // Throw it away
+        { health: -10, smarts: -5, happiness: +10 },
+        { health: 0, smarts: +5, happiness: -2 }
       ]
     },
     {
@@ -64,7 +68,49 @@ function App() {
         { health: -5, happiness: -5 },
         { health: +5, happiness: +5 }
       ]
+    },
+    {
+      description: "You found $10 in an old coat pocket.",
+      options: ["Keep it", "Give it to charity"],
+      effects: [
+        { happiness: +5, money: +10 },
+        { happiness: +10, money: 0 }
+      ]
+    },
+    {
+      description: "You helped a neighbor carry groceries.",
+      options: ["Accept the $5 tip", "Refuse politely"],
+      effects: [
+        { happiness: +5, money: +5 },
+        { happiness: +10 }
+      ]
+    },
+    {
+      description: "You lost your wallet at the park.",
+      options: ["Look for it", "Panic and cry"],
+      effects: [
+        { smarts: +5, money: -20 },
+        { happiness: -10, money: -20 }
+      ]
+    },
+    {
+      description: "You entered a local gaming tournament.",
+      options: ["Play seriously", "Just have fun"],
+      effects: [
+        { smarts: +5, happiness: +5, money: +50 },
+        { happiness: +10 }
+      ]
     }
+  ];
+
+  const possibleJobs = [
+    { title: "Pizza Delivery Driver 🍕", salary: 12000 },
+    { title: "Coffee Shop Barista ☕", salary: 15000 },
+    { title: "Junior Developer 💻", salary: 25000 },
+    { title: "Dog Walker 🐕", salary: 8000 },
+    { title: "Supermarket Cashier 🛒", salary: 14000 },
+    { title: "Social Media Manager 📱", salary: 22000 },
+    { title: "Aspiring Rockstar 🎸", salary: 5000 },
   ];
 
   //Validation on user input
@@ -81,7 +127,13 @@ function App() {
   //Replay as the same character
   const handleReplaySameCharacter = () => {
     setAge(0);
-    setStats({ health: 100, smarts: getRandomStat(), happiness: getRandomStat() });
+    setStats({
+      health: 100,
+      smarts: getRandomStat(),
+      happiness: getRandomStat()
+    });
+    setMoney(0);
+    setJob(null);
     setLifeLog([]);
     setEvent(null);
     setEventResolved(true); //So Age Up button shows immediatly
@@ -94,7 +146,13 @@ function App() {
     setUsername('');
     setCountry('');
     setAge(0);
-    setStats({ health: 100, smarts: getRandomStat(), happiness: getRandomStat() });
+    setStats({
+      health: 100,
+      smarts: getRandomStat(),
+      happiness: getRandomStat()
+    });
+    setMoney(0);
+    setJob(null);
     setLifeLog([]);
     setEvent(null);
     setEventResolved(true); //So Age Up button shows immediatly
@@ -130,14 +188,27 @@ function App() {
     const nextAge = age + 1;
     setAge(nextAge);
 
-    //if (!eventResolved) return;
+    // If player has a job, pay salary
+    if (job) {
+      setMoney(prevMoney => {
+        const newMoney = prevMoney + job.salary;
+        setLifeLog(prev => [
+          ...prev,
+          `💰 You earned $${job.salary} from your job as ${job.title}. Total money: $${newMoney}`
+        ]);
+        return newMoney;
+      });
+    }
+
+    // Trigger a life event
     const newEvent = lifeEvents[Math.floor(Math.random() * lifeEvents.length)];
     setEvent(newEvent);
     setEventResolved(false);
 
-    //Log age change
-    setLifeLog(prev => [...prev, `"You aged up to ${nextAge} years old.`])
+    // Log age up
+    setLifeLog(prev => [...prev, `🎂 You aged up to ${nextAge} years old.`]);
   };
+
 
   //Handle option selected
   const handleOption = (optionIndex) => {
@@ -151,6 +222,7 @@ function App() {
           health: Math.max(0, Math.min(100, prevStats.health + (chosenEffects.health || 0))),
           smarts: Math.max(0, Math.min(100, prevStats.smarts + (chosenEffects.smarts || 0))),
           happiness: Math.max(0, Math.min(100, prevStats.happiness + (chosenEffects.happiness || 0))),
+          money: prevStats.money + (chosenEffects.money || 0)
         };
 
         // If any stat reaches 0, game over!
@@ -161,6 +233,11 @@ function App() {
 
         return newStats;
       });
+
+      // Update money only if it's defined
+      if (typeof chosenEffects.money !== 'undefined') {
+        setMoney(prevMoney => prevMoney + chosenEffects.money);
+      }
     }
 
     // Add to history
@@ -240,7 +317,8 @@ function App() {
                 }}
               >
                 <h2 style={{ margin: 0 }}>{username}</h2>
-                <h2 style={{ margin: 0 }}>Age {age}</h2>
+                <h2 style={{ margin: 0 }}>Age: {age}</h2>
+                <h2 style={{ margin: 0 }}>Money: ${money}</h2>
               </div>
 
               {/* Middle content */}
@@ -256,6 +334,9 @@ function App() {
                 className="fade-in"
               >
                 <p>🌍 Country: {country}</p>
+                {job && (
+                  <p>👔 Job: {job.title} ($ {job.salary} / year)</p>
+                )}
 
                 {/* Life Log */}
                 <div style={{ marginTop: '2rem', flexGrow: 1 }}>
@@ -274,6 +355,22 @@ function App() {
               {(!event || eventResolved) && (
                 <div className='age-up-button' style={{ textAlign: 'center', marginTop: '2rem' }}>
                   <button onClick={handleAgeUp}>Age Up</button>
+                </div>
+              )}
+
+              {/* Show 'Get a job' button if player is old enough */}
+              {age >= 16 && !job && (
+                <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                  <button onClick={() => {
+                    const randomJob = possibleJobs[Math.floor(Math.random() * possibleJobs.length)];
+                    setJob(randomJob);
+                    setLifeLog(prev => [
+                      ...prev,
+                      `📄 You started working as ${randomJob.title}, salary $${randomJob.salary} per year.`
+                    ]);
+                  }}>
+                    Look for a Job
+                  </button>
                 </div>
               )}
 
